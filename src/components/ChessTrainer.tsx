@@ -20,6 +20,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
   const [status, setStatus] = useState<GameStatus>('playing')
   const [hintActive, setHintActive] = useState(false)
   const [history, setHistory] = useState<string[]>(() => variation.side === 'black' ? [variation.moves[0]] : [])
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
   const engineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const userColor = variation.side === 'white' ? 'w' : 'b'
@@ -27,6 +28,22 @@ function ChessTrainer({ variation, onComplete }: Props) {
   const nextBoardMove = status === 'playing' && game.turn() === userColor
     ? game.moves({ verbose: true }).find((move) => move.san === expectedMove)
     : undefined
+  const selectedMoves = selectedSquare
+    ? game.moves({ verbose: true }).filter((move) => move.from === selectedSquare)
+    : []
+  const squareStyles = selectedSquare
+    ? Object.fromEntries([
+      [selectedSquare, { boxShadow: 'inset 0 0 0 3px rgba(60, 101, 63, 0.72)' }],
+      ...selectedMoves
+        .filter((move) => move.to !== selectedSquare)
+        .map((move) => [
+          move.to,
+          game.get(move.to)
+            ? { boxShadow: 'inset 0 0 0 3px rgba(172, 91, 67, 0.72)' }
+            : { backgroundImage: 'radial-gradient(circle, rgba(56, 85, 56, 0.48) 0 22%, transparent 25%)' },
+        ]),
+    ])
+    : {}
   const pieceNames: Record<string, string> = {
     p: 'pawn',
     n: 'knight',
@@ -85,6 +102,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
     setStatus('playing')
     setHistory([])
     setHintActive(false)
+    setSelectedSquare(null)
 
     if (variation.side === 'black') makeEngineMove(newGame, 0)
   }, [makeEngineMove, variation.side])
@@ -99,6 +117,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
   const onDrop = (sourceSquare: string, targetSquare: string) => {
     if (status !== 'playing' || game.turn() !== userColor || moveIndex >= variation.moves.length) return false
 
+    setSelectedSquare(null)
     const nextGame = new Chess(game.fen())
     let playedMove
 
@@ -124,6 +143,25 @@ function ChessTrainer({ variation, onComplete }: Props) {
     else makeEngineMove(nextGame, moveIndex + 1)
 
     return true
+  }
+
+  const onSquareClick = ({ square }: { square: string }) => {
+    if (status !== 'playing' || game.turn() !== userColor) return
+
+    if (selectedSquare === square) {
+      setSelectedSquare(null)
+      return
+    }
+
+    const legalMoves = game.moves({ verbose: true })
+    if (legalMoves.some((move) => move.from === square)) {
+      setSelectedSquare(square)
+      return
+    }
+
+    if (selectedSquare && selectedMoves.some((move) => move.to === square)) {
+      onDrop(selectedSquare, square)
+    }
   }
 
   const moveNumbers = history.map((move, index) => (
@@ -155,10 +193,12 @@ function ChessTrainer({ variation, onComplete }: Props) {
               position: game.fen(),
               onPieceDrop: ({ sourceSquare, targetSquare }) =>
                 sourceSquare && targetSquare ? onDrop(sourceSquare, targetSquare) : false,
+              onSquareClick,
               boardOrientation: variation.side,
               allowDragging: status === 'playing' && game.turn() === userColor,
               boardStyle: { borderRadius: '5px', boxShadow: '0 4px 14px rgba(27, 38, 29, 0.1)' },
               draggingPieceStyle: { transform: 'scale(1)' },
+              squareStyles,
               darkSquareStyle: { backgroundColor: '#769874' },
               lightSquareStyle: { backgroundColor: '#eeeedf' },
             }}
@@ -166,7 +206,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
           {status === 'mistake' && <div className="board-overlay wrong"><span>Not quite — give it another try.</span></div>}
           {status === 'completed' && <div className="board-overlay success"><span><Check size={17} /> Line complete. Nicely played.</span></div>}
         </div>
-        <div className="board-caption"><span><span className="board-status-dot" /> {status === 'playing' ? 'Drag a piece to make your move' : status === 'completed' ? 'A new line is just one click away' : 'Resetting the line...'}</span><span>{moveIndex} / {variation.moves.length} moves</span></div>
+        <div className="board-caption"><span><span className="board-status-dot" /> {status === 'playing' ? selectedSquare ? `Selected ${selectedSquare} · click a highlighted square` : 'Click a piece, then its destination — or drag' : status === 'completed' ? 'A new line is just one click away' : 'Resetting the line...'}</span><span>{moveIndex} / {variation.moves.length} moves</span></div>
       </div>
 
       <div className="trainer-details">
