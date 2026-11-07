@@ -23,6 +23,27 @@ function ChessTrainer({ variation, onComplete }: Props) {
   const engineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const userColor = variation.side === 'white' ? 'w' : 'b'
+  const expectedMove = variation.moves[moveIndex]
+  const nextBoardMove = status === 'playing' && game.turn() === userColor
+    ? game.moves({ verbose: true }).find((move) => move.san === expectedMove)
+    : undefined
+  const pieceNames: Record<string, string> = {
+    p: 'pawn',
+    n: 'knight',
+    b: 'bishop',
+    r: 'rook',
+    q: 'queen',
+    k: 'king',
+  }
+  const moveInstruction = nextBoardMove
+    ? nextBoardMove.isKingsideCastle()
+      ? `Castle kingside with your king, from ${nextBoardMove.from} to ${nextBoardMove.to}.`
+      : nextBoardMove.isQueensideCastle()
+        ? `Castle queenside with your king, from ${nextBoardMove.from} to ${nextBoardMove.to}.`
+        : nextBoardMove.isCapture()
+          ? `Capture on ${nextBoardMove.to} with your ${pieceNames[nextBoardMove.piece]} from ${nextBoardMove.from}${nextBoardMove.promotion ? ` and promote to a ${pieceNames[nextBoardMove.promotion]}` : ''}.`
+          : `Move your ${pieceNames[nextBoardMove.piece]} from ${nextBoardMove.from} to ${nextBoardMove.to}${nextBoardMove.promotion ? ` and promote to a ${pieceNames[nextBoardMove.promotion]}` : ''}.`
+    : ''
 
   const completeLine = useCallback(() => {
     setStatus('completed')
@@ -79,7 +100,6 @@ function ChessTrainer({ variation, onComplete }: Props) {
     if (status !== 'playing' || game.turn() !== userColor || moveIndex >= variation.moves.length) return false
 
     const nextGame = new Chess(game.fen())
-    const expectedMove = variation.moves[moveIndex]
     let playedMove
 
     try {
@@ -122,6 +142,13 @@ function ChessTrainer({ variation, onComplete }: Props) {
           </span>
           <div className="player-tag opponent-tag"><span className="opponent-color">{variation.side === 'white' ? 'black' : 'white'}</span> Opening line <span className="opponent-piece">♚</span></div>
         </div>
+        <div className={`move-instruction${nextBoardMove?.isCapture() ? ' capture-instruction' : ''}`} aria-live="polite">
+          <span className="instruction-icon">{status === 'completed' ? <Check size={15} /> : <Sparkles size={14} />}</span>
+          <div>
+            <strong>{status === 'completed' ? 'Line complete' : nextBoardMove ? `Your move · ${expectedMove}` : status === 'mistake' ? 'Try that line again' : 'Follow the line'}</strong>
+            <p>{status === 'completed' ? 'Great work — you reached the end of this line.' : nextBoardMove ? moveInstruction : status === 'mistake' ? 'The board will reset in a moment.' : 'Watch the board while the other side plays.'}</p>
+          </div>
+        </div>
         <div className="board-wrap">
           <Chessboard
             options={{
@@ -131,6 +158,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
               boardOrientation: variation.side,
               allowDragging: status === 'playing' && game.turn() === userColor,
               boardStyle: { borderRadius: '5px', boxShadow: '0 4px 14px rgba(27, 38, 29, 0.1)' },
+              draggingPieceStyle: { transform: 'scale(1)' },
               darkSquareStyle: { backgroundColor: '#769874' },
               lightSquareStyle: { backgroundColor: '#eeeedf' },
             }}
