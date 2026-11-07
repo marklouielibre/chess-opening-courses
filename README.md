@@ -1,6 +1,6 @@
 # Opening Lab
 
-Opening Lab is a React + Vite chess-opening study app. Choose a repertoire line, play it on the board as White or Black by dragging pieces or clicking a piece and its highlighted destination, follow prompts that name the piece and squares for each move, use hints when needed, and revisit lines with local spaced-repetition progress. Dragged pieces stay at their normal board size.
+Opening Lab is a React + Vite chess-opening study app with a bold, readable interface. Choose a repertoire line, play it on the board as White or Black by dragging pieces or clicking a piece and its highlighted destination, follow prompts that name the piece and squares for each move, and get clear on-board check/X feedback for your own moves. Use hints when needed and revisit lines with local spaced-repetition progress. Dragged pieces stay at their normal board size.
 
 The dark interface uses the `#2c2b29` near-black background and `#4b4847` charcoal borders. The chessboard uses classic green-and-white squares (`#769656` and `#eeeed2`); interface accents use the supplied green palette.
 

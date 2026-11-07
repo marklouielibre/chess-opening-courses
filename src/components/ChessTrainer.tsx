@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Chess } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
-import { Check, Lightbulb, RotateCcw, Sparkles } from 'lucide-react'
+import { Check, Lightbulb, RotateCcw, Sparkles, X } from 'lucide-react'
 import type { GameStatus, Variation } from '../types/chess'
 import { saveSRSData } from '../utils/srsEngine'
 
@@ -21,8 +21,10 @@ function ChessTrainer({ variation, onComplete }: Props) {
   const [hintActive, setHintActive] = useState(false)
   const [history, setHistory] = useState<string[]>(() => variation.side === 'black' ? [variation.moves[0]] : [])
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
+  const [moveFeedback, setMoveFeedback] = useState<{ square: string; correct: boolean } | null>(null)
   const engineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const userColor = variation.side === 'white' ? 'w' : 'b'
   const expectedMove = variation.moves[moveIndex]
   const nextBoardMove = status === 'playing' && game.turn() === userColor
@@ -96,6 +98,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
   const resetGame = useCallback(() => {
     if (engineTimeoutRef.current) clearTimeout(engineTimeoutRef.current)
     if (completionTimeoutRef.current) clearTimeout(completionTimeoutRef.current)
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current)
     const newGame = new Chess()
     setGame(newGame)
     setMoveIndex(0)
@@ -103,6 +106,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
     setHistory([])
     setHintActive(false)
     setSelectedSquare(null)
+    setMoveFeedback(null)
 
     if (variation.side === 'black') makeEngineMove(newGame, 0)
   }, [makeEngineMove, variation.side])
@@ -111,8 +115,21 @@ function ChessTrainer({ variation, onComplete }: Props) {
     return () => {
       if (engineTimeoutRef.current) clearTimeout(engineTimeoutRef.current)
       if (completionTimeoutRef.current) clearTimeout(completionTimeoutRef.current)
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current)
     }
   }, [])
+
+  const showMoveFeedback = (square: string, correct: boolean) => {
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current)
+    setMoveFeedback({ square, correct })
+
+    if (correct) {
+      feedbackTimeoutRef.current = setTimeout(() => {
+        setMoveFeedback(null)
+        feedbackTimeoutRef.current = null
+      }, 1200)
+    }
+  }
 
   const onDrop = (sourceSquare: string, targetSquare: string) => {
     if (status !== 'playing' || game.turn() !== userColor || moveIndex >= variation.moves.length) return false
@@ -124,17 +141,23 @@ function ChessTrainer({ variation, onComplete }: Props) {
     try {
       playedMove = nextGame.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })
     } catch {
+      showMoveFeedback(sourceSquare, false)
+      setStatus('mistake')
+      saveSRSData(variation.id, 0)
+      engineTimeoutRef.current = setTimeout(resetGame, 1400)
       return false
     }
 
     if (playedMove.san !== expectedMove) {
+      showMoveFeedback(sourceSquare, false)
       setStatus('mistake')
       saveSRSData(variation.id, 0)
-      engineTimeoutRef.current = setTimeout(resetGame, 900)
+      engineTimeoutRef.current = setTimeout(resetGame, 1400)
       return false
     }
 
     setGame(nextGame)
+    showMoveFeedback(targetSquare, true)
     setMoveIndex(moveIndex + 1)
     setHistory((previous) => [...previous, playedMove.san])
     setHintActive(false)
@@ -201,9 +224,22 @@ function ChessTrainer({ variation, onComplete }: Props) {
               squareStyles,
               darkSquareStyle: { backgroundColor: '#769656' },
               lightSquareStyle: { backgroundColor: '#eeeed2' },
+              squareRenderer: ({ square, piece, children }) => (
+                <div className="feedback-square">
+                  {children}
+                  {moveFeedback?.square === square && piece?.pieceType[0] === userColor && (
+                    <span
+                      className={`move-feedback ${moveFeedback.correct ? 'feedback-correct' : 'feedback-wrong'}`}
+                      role="img"
+                      aria-label={moveFeedback.correct ? 'Correct move' : 'Incorrect move'}
+                    >
+                      {moveFeedback.correct ? <Check size={15} strokeWidth={3} /> : <X size={15} strokeWidth={3} />}
+                    </span>
+                  )}
+                </div>
+              ),
             }}
           />
-          {status === 'mistake' && <div className="board-overlay wrong"><span>Not quite — give it another try.</span></div>}
           {status === 'completed' && <div className="board-overlay success"><span><Check size={17} /> Line complete. Nicely played.</span></div>}
         </div>
         <div className="board-caption"><span><span className="board-status-dot" /> {status === 'playing' ? selectedSquare ? `Selected ${selectedSquare} · click a highlighted square` : 'Click a piece, then its destination — or drag' : status === 'completed' ? 'A new line is just one click away' : 'Resetting the line...'}</span><span>{moveIndex} / {variation.moves.length} moves</span></div>
