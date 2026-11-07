@@ -1,0 +1,25 @@
+# Opening Lab
+
+Opening Lab is a React + Vite chess-opening study app. Choose a repertoire line, play it on the board as White or Black, use hints when needed, and revisit lines with local spaced-repetition progress.
+
+## Get started
+
+```sh
+npm install
+npm run dev
+```
+
+## Scripts
+
+- `npm run dev` — start the local development server
+- `npm run build` — type-check and create a production build
+- `npm run lint` — run Oxlint
+- `npm run preview` — preview the production build
+
+## Opening library
+
+The starter library includes representative lines for the Italian Game, Ruy Lopez, Sicilian Defense, Caro-Kann Defense, French Defense, Queen’s Gambit, King’s Indian Defense, and London System. Each variation stores its full practice sequence as standard algebraic notation (SAN) in `src/data/openings.ts`.
+
+Add a variation by supplying a unique `id`, a display `name`, the repertoire `side` to train, and a legal sequence of SAN `moves`. The trainer automatically plays the opposing moves from that sequence. Opening and review progress is saved in the browser’s local storage; no account or server is required.
+
+The included catalog is a starting repertoire rather than an exhaustive database of every opening and playable variation. It can be expanded by adding and validating more lines in `src/data/openings.ts`.

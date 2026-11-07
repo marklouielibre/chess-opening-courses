@@ -1,0 +1,175 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Chess } from 'chess.js'
+import { Chessboard } from 'react-chessboard'
+import { Check, Lightbulb, RotateCcw, Sparkles } from 'lucide-react'
+import type { GameStatus, Variation } from '../types/chess'
+import { saveSRSData } from '../utils/srsEngine'
+
+interface Props {
+  variation: Variation
+  onComplete: () => void
+}
+
+function ChessTrainer({ variation, onComplete }: Props) {
+  const [game, setGame] = useState(() => {
+    const initialGame = new Chess()
+    if (variation.side === 'black') initialGame.move(variation.moves[0])
+    return initialGame
+  })
+  const [moveIndex, setMoveIndex] = useState(variation.side === 'black' ? 1 : 0)
+  const [status, setStatus] = useState<GameStatus>('playing')
+  const [hintActive, setHintActive] = useState(false)
+  const [history, setHistory] = useState<string[]>(() => variation.side === 'black' ? [variation.moves[0]] : [])
+  const engineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const userColor = variation.side === 'white' ? 'w' : 'b'
+
+  const completeLine = useCallback(() => {
+    setStatus('completed')
+    saveSRSData(variation.id, 5)
+    completionTimeoutRef.current = setTimeout(onComplete, 1000)
+  }, [onComplete, variation.id])
+
+  const makeEngineMove = useCallback((currentGame: Chess, index: number) => {
+    if (index >= variation.moves.length) {
+      completeLine()
+      return
+    }
+
+    engineTimeoutRef.current = setTimeout(() => {
+      const move = variation.moves[index]
+      const nextGame = new Chess(currentGame.fen())
+
+      try {
+        nextGame.move(move)
+      } catch (error) {
+        console.error(`Invalid move "${move}" in opening line "${variation.name}"`, error)
+        setStatus('mistake')
+        return
+      }
+
+      setGame(nextGame)
+      setMoveIndex(index + 1)
+      setHistory((previous) => [...previous, move])
+      if (index + 1 >= variation.moves.length) completeLine()
+    }, 420)
+  }, [completeLine, variation.moves, variation.name])
+
+  const resetGame = useCallback(() => {
+    if (engineTimeoutRef.current) clearTimeout(engineTimeoutRef.current)
+    if (completionTimeoutRef.current) clearTimeout(completionTimeoutRef.current)
+    const newGame = new Chess()
+    setGame(newGame)
+    setMoveIndex(0)
+    setStatus('playing')
+    setHistory([])
+    setHintActive(false)
+
+    if (variation.side === 'black') makeEngineMove(newGame, 0)
+  }, [makeEngineMove, variation.side])
+
+  useEffect(() => {
+    return () => {
+      if (engineTimeoutRef.current) clearTimeout(engineTimeoutRef.current)
+      if (completionTimeoutRef.current) clearTimeout(completionTimeoutRef.current)
+    }
+  }, [])
+
+  const onDrop = (sourceSquare: string, targetSquare: string) => {
+    if (status !== 'playing' || game.turn() !== userColor || moveIndex >= variation.moves.length) return false
+
+    const nextGame = new Chess(game.fen())
+    const expectedMove = variation.moves[moveIndex]
+    let playedMove
+
+    try {
+      playedMove = nextGame.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })
+    } catch {
+      return false
+    }
+
+    if (playedMove.san !== expectedMove) {
+      setStatus('mistake')
+      saveSRSData(variation.id, 0)
+      engineTimeoutRef.current = setTimeout(resetGame, 900)
+      return false
+    }
+
+    setGame(nextGame)
+    setMoveIndex(moveIndex + 1)
+    setHistory((previous) => [...previous, playedMove.san])
+    setHintActive(false)
+
+    if (moveIndex + 1 >= variation.moves.length) completeLine()
+    else makeEngineMove(nextGame, moveIndex + 1)
+
+    return true
+  }
+
+  const moveNumbers = history.map((move, index) => (
+    index % 2 === 0
+      ? <span className="move-pair" key={`${index}-${move}`}><span className="move-number">{Math.floor(index / 2) + 1}.</span><strong className={index === history.length - 1 ? 'current-move' : ''}>{move}</strong>{history[index + 1] && <span className={index + 1 === history.length - 1 ? 'current-move' : ''}>{history[index + 1]}</span>}</span>
+      : null
+  ))
+
+  return (
+    <div className="trainer-card">
+      <div className="board-column">
+        <div className="board-topline">
+          <div className="player-tag"><span className="player-piece">♔</span> You <span className="player-color">{variation.side}</span></div>
+          <span className="board-turn">
+            {status === 'completed' ? <><Check size={13} /> LINE COMPLETE</> : status === 'mistake' ? 'TRY AGAIN' : 'YOUR TURN'}
+          </span>
+          <div className="player-tag opponent-tag"><span className="opponent-color">{variation.side === 'white' ? 'black' : 'white'}</span> Opening line <span className="opponent-piece">♚</span></div>
+        </div>
+        <div className="board-wrap">
+          <Chessboard
+            options={{
+              position: game.fen(),
+              onPieceDrop: ({ sourceSquare, targetSquare }) =>
+                sourceSquare && targetSquare ? onDrop(sourceSquare, targetSquare) : false,
+              boardOrientation: variation.side,
+              allowDragging: status === 'playing' && game.turn() === userColor,
+              boardStyle: { borderRadius: '5px', boxShadow: '0 4px 14px rgba(27, 38, 29, 0.1)' },
+              darkSquareStyle: { backgroundColor: '#769874' },
+              lightSquareStyle: { backgroundColor: '#eeeedf' },
+            }}
+          />
+          {status === 'mistake' && <div className="board-overlay wrong"><span>Not quite — give it another try.</span></div>}
+          {status === 'completed' && <div className="board-overlay success"><span><Check size={17} /> Line complete. Nicely played.</span></div>}
+        </div>
+        <div className="board-caption"><span><span className="board-status-dot" /> {status === 'playing' ? 'Drag a piece to make your move' : status === 'completed' ? 'A new line is just one click away' : 'Resetting the line...'}</span><span>{moveIndex} / {variation.moves.length} moves</span></div>
+      </div>
+
+      <div className="trainer-details">
+        <div className="lesson-callout">
+          <span className="callout-icon"><Sparkles size={16} /></span>
+          <div><strong>Learn by playing</strong><p>Find the moves from memory. The other side will follow the line.</p></div>
+        </div>
+
+        <div className="move-section">
+          <div className="moves-heading"><strong>MOVE SEQUENCE</strong><span>{Math.ceil(variation.moves.length / 2)} moves</span></div>
+          <div className="move-list" aria-live="polite">
+            {history.length === 0
+              ? <span className="move-placeholder">Your moves will appear here</span>
+              : moveNumbers}
+            {hintActive && variation.moves[moveIndex] && <span className="hint-chip"><Lightbulb size={13} /> Try {variation.moves[moveIndex]}</span>}
+          </div>
+        </div>
+
+        <div className="trainer-status">
+          <span className={`status-mark ${status === 'completed' ? 'is-complete' : ''}`}>{status === 'completed' ? <Check size={14} /> : <span />}</span>
+          <div><strong>{status === 'completed' ? 'Repertoire updated' : status === 'mistake' ? 'That move is not in this line' : 'Take your time'}</strong><p>{status === 'completed' ? 'This line is saved to your review progress.' : status === 'mistake' ? 'Watch the board — the position will reset.' : 'There is no clock. Focus on the idea.'}</p></div>
+        </div>
+
+        <div className="trainer-actions">
+          <button type="button" className="trainer-button reset-button" onClick={resetGame}><RotateCcw size={15} /> Start over</button>
+          <button type="button" className="trainer-button hint-button" onClick={() => setHintActive(true)} disabled={status !== 'playing' || moveIndex >= variation.moves.length}><Lightbulb size={15} /> Show hint</button>
+        </div>
+        <p className="training-footnote">One line at a time. Your progress is saved on this device.</p>
+      </div>
+    </div>
+  )
+}
+
+export default ChessTrainer
