@@ -593,7 +593,7 @@
 .capture-instruction strong { color: #82683f; }
 .capture-instruction p { color: #90784f; }
 .board-wrap { position: relative; width: 100%; aspect-ratio: 1; }
-.board-wrap > div { width: 100% !important; height: 100% !important; }
+.board-wrap > #chessboard-board { width: 100%; height: 100%; }
 .board-overlay { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 5px; pointer-events: none; }
 .board-overlay span { max-width: 90%; padding: 8px 11px; display: flex; align-items: center; gap: 6px; color: #fff; background: rgba(53, 74, 54, .91); border-radius: 6px; box-shadow: 0 3px 12px #253d2b30; font-size: 10px; font-weight: 600; }
 .board-overlay.wrong span { background: rgba(132, 72, 59, .93); }
