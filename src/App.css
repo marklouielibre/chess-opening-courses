@@ -730,3 +730,364 @@
   .trainer-status { margin-top: 10px; }
   .page-footer { align-items: flex-start; flex-direction: column; gap: 5px; }
 }
+
+.app-shell,
+.main-content {
+  color: #d3d0c8;
+  background: #2c2b29;
+}
+
+.sidebar,
+.topbar {
+  background: #302f2d;
+  border-color: #4b4847;
+}
+
+.brand,
+.welcome-row h1,
+.stat-value,
+.section-heading h2,
+.lesson-heading h2 {
+  color: #f0eee7;
+}
+
+.brand-light,
+.welcome-row h1 span,
+.eyebrow,
+.section-kicker {
+  color: #a7ba94;
+}
+
+.brand-mark,
+.button-dark {
+  color: #f7f5ee;
+  background: #4e7837;
+  border-color: #4e7837;
+}
+
+.button-dark:hover {
+  background: #69923e;
+}
+
+.nav-item,
+.library-nav button,
+.breadcrumb,
+.today-label,
+.icon-button,
+.welcome-copy,
+.section-heading p,
+.lesson-heading p,
+.stat-value span,
+.stat-foot,
+.board-caption,
+.page-footer,
+.training-footnote {
+  color: #b6b2aa;
+}
+
+.nav-item:hover,
+.library-nav button:hover,
+.library-nav button.active,
+.icon-button:hover {
+  color: #dce8d2;
+  background: #3a3b35;
+}
+
+.nav-item.active {
+  color: #dce8d2;
+  background: #394432;
+}
+
+.sidebar-label,
+.nav-count,
+.library-nav button > span:last-child,
+.profile-copy small,
+.breadcrumb,
+.crumb-slash,
+.stat-label,
+.section-kicker,
+.opening-category,
+.variation-copy small,
+.variation-arrow,
+.moves-heading span,
+.move-placeholder {
+  color: #a7a399;
+}
+
+.sidebar-tip,
+.stat-card,
+.course-panel,
+.lesson-column,
+.search-box,
+.move-list {
+  background: #343331;
+  border-color: #4b4847;
+}
+
+.sidebar-tip strong,
+.profile-copy strong,
+.breadcrumb strong,
+.stat-value,
+.panel-heading strong,
+.opening-group-heading,
+.variation-copy strong,
+.trainer-status strong {
+  color: #ebe8e0;
+}
+
+.sidebar-tip p,
+.stat-value span,
+.panel-heading > div > span,
+.variation-row,
+.lesson-heading p,
+.lesson-callout p,
+.trainer-status p {
+  color: #c1bdb4;
+}
+
+.tip-icon,
+.avatar,
+.top-avatar,
+.stat-icon.mint,
+.stat-icon.peach,
+.stat-icon.lilac,
+.callout-icon {
+  color: #b8d29f;
+  background: #3d4935;
+}
+
+.sidebar-tip a,
+.footer-piece {
+  color: #a6c58d;
+}
+
+.profile-button,
+.panel-heading,
+.opening-group,
+.catalog-note,
+.trainer-status,
+.page-footer {
+  border-color: #4b4847;
+}
+
+.online-dot,
+.stat-dot.green,
+.level-pill span,
+.board-status-dot {
+  background: #8eb96b;
+}
+
+.stat-dot.orange {
+  background: #d2a368;
+}
+
+.eyebrow-line,
+.filter-indicator {
+  background: #8eb96b;
+}
+
+.button-outline,
+.reset-button {
+  color: #d4d0c7;
+  background: #343331;
+  border-color: #55514e;
+}
+
+.button-outline:hover,
+.reset-button:hover:not(:disabled) {
+  background: #403e3b;
+}
+
+.button-dark:disabled {
+  color: #d4d0c7;
+  background: #4e7837;
+  border-color: #4e7837;
+}
+
+.stat-card {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .14);
+}
+
+.progress-track {
+  background: #4b4847;
+}
+
+.progress-track span {
+  background: #69923e;
+}
+
+.search-box {
+  color: #b6b2aa;
+}
+
+.search-box:focus-within {
+  border-color: #69923e;
+  box-shadow: 0 0 0 2px rgba(105, 146, 62, .2);
+}
+
+.search-box input {
+  color: #f0eee7;
+  color-scheme: dark;
+}
+
+.search-box input::placeholder,
+.search-shortcut {
+  color: #a7a399;
+}
+
+.search-shortcut,
+.filter-select {
+  background: #2c2b29;
+  border-color: #4b4847;
+}
+
+.filter-select,
+.filter-select select {
+  color: #d3d0c8;
+}
+
+.opening-group-heading {
+  color: #e4e0d7;
+}
+
+.variation-row:hover {
+  background: #3c3a37;
+}
+
+.variation-row.selected {
+  background: #3b4735;
+  border-color: #4e7837;
+}
+
+.variation-state {
+  color: #d4b481;
+  background: #494033;
+}
+
+.variation-state.mastered {
+  color: #acd18f;
+  background: #394734;
+}
+
+.lesson-heading .section-kicker,
+.eyebrow,
+.section-kicker {
+  color: #a9bd96;
+}
+
+.level-pill {
+  color: #c7d7b6;
+  background: #3a4533;
+}
+
+.trainer-card {
+  background: #302f2d;
+  border-color: #4b4847;
+}
+
+.player-tag,
+.board-turn,
+.moves-heading,
+.lesson-callout strong {
+  color: #c7c2b8;
+}
+
+.player-piece,
+.opponent-piece {
+  color: #c3d5b3;
+}
+
+.player-color,
+.opponent-color {
+  color: #aaa59b;
+}
+
+.move-instruction {
+  background: #3b4735;
+  border-color: #4e5e41;
+}
+
+.instruction-icon {
+  color: #c6dfad;
+  background: #4a5d3d;
+}
+
+.move-instruction strong {
+  color: #e3ecd9;
+}
+
+.move-instruction p {
+  color: #c3d0b8;
+}
+
+.capture-instruction {
+  background: #494033;
+  border-color: #65553d;
+}
+
+.capture-instruction .instruction-icon {
+  color: #e4c28e;
+  background: #5a4b36;
+}
+
+.capture-instruction strong {
+  color: #f0d7ad;
+}
+
+.capture-instruction p {
+  color: #d6bd98;
+}
+
+.lesson-callout {
+  background: #363d32;
+  border-color: #4b5044;
+}
+
+.move-pair {
+  color: #d0ccc3;
+}
+
+.move-number {
+  color: #aaa59b;
+}
+
+.current-move {
+  color: #a9d188 !important;
+}
+
+.hint-chip {
+  color: #ead09f;
+  background: #4b4132;
+}
+
+.status-mark {
+  color: #c0bbae;
+  background: #45433f;
+}
+
+.status-mark > span {
+  background: #aaa69b;
+}
+
+.status-mark.is-complete {
+  color: #c2dda9;
+  background: #3e4c36;
+}
+
+.reset-button {
+  color: #d3d0c8;
+}
+
+.hint-button {
+  color: #ead09f;
+  background: #494033;
+  border-color: #65553d;
+}
+
+.hint-button:hover:not(:disabled) {
+  background: #564a37;
+}
+
+.board-overlay span {
+  background: rgba(44, 43, 41, .94);
+}

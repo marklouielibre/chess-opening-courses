@@ -199,8 +199,8 @@ function ChessTrainer({ variation, onComplete }: Props) {
               boardStyle: { borderRadius: '5px', boxShadow: '0 4px 14px rgba(27, 38, 29, 0.1)' },
               draggingPieceStyle: { transform: 'scale(1)' },
               squareStyles,
-              darkSquareStyle: { backgroundColor: '#769874' },
-              lightSquareStyle: { backgroundColor: '#eeeedf' },
+              darkSquareStyle: { backgroundColor: '#4e7837' },
+              lightSquareStyle: { backgroundColor: '#69923e' },
             }}
           />
           {status === 'mistake' && <div className="board-overlay wrong"><span>Not quite — give it another try.</span></div>}
