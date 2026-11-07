@@ -22,6 +22,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
   const [history, setHistory] = useState<string[]>(() => variation.side === 'black' ? [variation.moves[0]] : [])
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
   const [moveFeedback, setMoveFeedback] = useState<{ square: string; correct: boolean } | null>(null)
+  const [recommendationGame, setRecommendationGame] = useState<Chess | null>(null)
   const engineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -30,8 +31,9 @@ function ChessTrainer({ variation, onComplete }: Props) {
   const nextBoardMove = status === 'playing' && game.turn() === userColor
     ? game.moves({ verbose: true }).find((move) => move.san === expectedMove)
     : undefined
+  const hintsGame = status === 'mistake' && recommendationGame ? recommendationGame : game
   const selectedMoves = selectedSquare
-    ? game.moves({ verbose: true }).filter((move) => move.from === selectedSquare)
+    ? hintsGame.moves({ verbose: true }).filter((move) => move.from === selectedSquare)
     : []
   const squareStyles = selectedSquare
     ? Object.fromEntries([
@@ -40,7 +42,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
         .filter((move) => move.to !== selectedSquare)
         .map((move) => [
           move.to,
-          game.get(move.to)
+          hintsGame.get(move.to)
             ? { boxShadow: 'inset 0 0 0 3px rgba(172, 91, 67, 0.72)' }
             : { backgroundImage: 'radial-gradient(circle, rgba(56, 85, 56, 0.48) 0 22%, transparent 25%)' },
         ]),
@@ -107,6 +109,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
     setHintActive(false)
     setSelectedSquare(null)
     setMoveFeedback(null)
+    setRecommendationGame(null)
 
     if (variation.side === 'black') makeEngineMove(newGame, 0)
   }, [makeEngineMove, variation.side])
@@ -131,10 +134,20 @@ function ChessTrainer({ variation, onComplete }: Props) {
     }
   }
 
+  const returnToPosition = (position: Chess) => {
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current)
+    feedbackTimeoutRef.current = setTimeout(() => {
+      setGame(position)
+      setStatus('playing')
+      setMoveFeedback(null)
+      setRecommendationGame(null)
+      feedbackTimeoutRef.current = null
+    }, 1400)
+  }
+
   const onDrop = (sourceSquare: string, targetSquare: string) => {
     if (status !== 'playing' || game.turn() !== userColor || moveIndex >= variation.moves.length) return false
 
-    setSelectedSquare(null)
     const nextGame = new Chess(game.fen())
     let playedMove
 
@@ -144,19 +157,23 @@ function ChessTrainer({ variation, onComplete }: Props) {
       showMoveFeedback(sourceSquare, false)
       setStatus('mistake')
       saveSRSData(variation.id, 0)
-      engineTimeoutRef.current = setTimeout(resetGame, 1400)
+      returnToPosition(game)
       return false
     }
 
     if (playedMove.san !== expectedMove) {
-      showMoveFeedback(sourceSquare, false)
+      setGame(nextGame)
+      setRecommendationGame(game)
+      showMoveFeedback(targetSquare, false)
       setStatus('mistake')
       saveSRSData(variation.id, 0)
-      engineTimeoutRef.current = setTimeout(resetGame, 1400)
-      return false
+      returnToPosition(game)
+      return true
     }
 
     setGame(nextGame)
+    setSelectedSquare(null)
+    setRecommendationGame(null)
     showMoveFeedback(targetSquare, true)
     setMoveIndex(moveIndex + 1)
     setHistory((previous) => [...previous, playedMove.san])
@@ -216,6 +233,9 @@ function ChessTrainer({ variation, onComplete }: Props) {
               position: game.fen(),
               onPieceDrop: ({ sourceSquare, targetSquare }) =>
                 sourceSquare && targetSquare ? onDrop(sourceSquare, targetSquare) : false,
+              onPieceDrag: ({ piece, square }) => {
+                if (square && piece.pieceType[0] === userColor) setSelectedSquare(square)
+              },
               onSquareClick,
               boardOrientation: variation.side,
               allowDragging: status === 'playing' && game.turn() === userColor,
@@ -225,7 +245,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
               darkSquareStyle: { backgroundColor: '#769656' },
               lightSquareStyle: { backgroundColor: '#eeeed2' },
               squareRenderer: ({ square, piece, children }) => (
-                <div className="feedback-square">
+                <div className="feedback-square" style={squareStyles[square]}>
                   {children}
                   {moveFeedback?.square === square && piece?.pieceType[0] === userColor && (
                     <span
@@ -242,7 +262,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
           />
           {status === 'completed' && <div className="board-overlay success"><span><Check size={17} /> Line complete. Nicely played.</span></div>}
         </div>
-        <div className="board-caption"><span><span className="board-status-dot" /> {status === 'playing' ? selectedSquare ? `Selected ${selectedSquare} · click a highlighted square` : 'Click a piece, then its destination — or drag' : status === 'completed' ? 'A new line is just one click away' : 'Resetting the line...'}</span><span>{moveIndex} / {variation.moves.length} moves</span></div>
+        <div className="board-caption"><span><span className="board-status-dot" /> {status === 'playing' ? selectedSquare ? `Selected ${selectedSquare} · click a highlighted square` : 'Click a piece, then its destination — or drag' : status === 'completed' ? 'A new line is just one click away' : 'Returning the piece to its starting square...'}</span><span>{moveIndex} / {variation.moves.length} moves</span></div>
       </div>
 
       <div className="trainer-details">
@@ -263,7 +283,7 @@ function ChessTrainer({ variation, onComplete }: Props) {
 
         <div className="trainer-status">
           <span className={`status-mark ${status === 'completed' ? 'is-complete' : ''}`}>{status === 'completed' ? <Check size={14} /> : <span />}</span>
-          <div><strong>{status === 'completed' ? 'Repertoire updated' : status === 'mistake' ? 'That move is not in this line' : 'Take your time'}</strong><p>{status === 'completed' ? 'This line is saved to your review progress.' : status === 'mistake' ? 'Watch the board — the position will reset.' : 'There is no clock. Focus on the idea.'}</p></div>
+          <div><strong>{status === 'completed' ? 'Repertoire updated' : status === 'mistake' ? 'That move is not in this line' : 'Take your time'}</strong><p>{status === 'completed' ? 'This line is saved to your review progress.' : status === 'mistake' ? 'The piece will return to its starting square.' : 'There is no clock. Focus on the idea.'}</p></div>
         </div>
 
         <div className="trainer-actions">
